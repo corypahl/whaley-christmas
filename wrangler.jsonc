@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "whaley-christmas",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-07",
+  "routes": [
+    {
+      "pattern": "corypahl.dev/whaley-christmas*",
+      "zone_name": "corypahl.dev"
+    }
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "whaley-christmas",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
