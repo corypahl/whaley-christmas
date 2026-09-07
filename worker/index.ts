@@ -1,6 +1,7 @@
 interface Env { DB: D1Database; ASSETS: Fetcher }
 
 const BASE = "/whaley-christmas";
+let schemaReady: Promise<void> | undefined;
 const PEOPLE = new Set([
   "nana", "papa", "peter-and-brittany", "elizabeth", "cory", "maggie", "hawken", "eddie", "sally", "theresa",
   "paul-and-brooke", "richie", "tommy", "emma", "john-paul", "sophie", "zelie", "adam", "nellie", "kolbe", "frankie", "jude",
@@ -46,6 +47,8 @@ export default {
 async function handleApi(request: Request, env: Env, path: string): Promise<Response> {
   const parts = path.split("/").filter(Boolean);
   if (parts[0] !== "api" || parts[1] !== "lists" || !PEOPLE.has(parts[2])) return json({ error: "List not found" }, 404);
+  schemaReady ??= initializeSchema(env.DB);
+  await schemaReady;
   const slug = parts[2];
 
   if (request.method === "GET" && parts.length === 3) {
@@ -73,6 +76,15 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
     }
   }
   return json({ error: "Not found" }, 404);
+}
+
+async function initializeSchema(db: D1Database): Promise<void> {
+  await db.batch([
+    db.prepare("CREATE TABLE IF NOT EXISTS items (id TEXT PRIMARY KEY, person_slug TEXT NOT NULL, title TEXT, details TEXT, url TEXT, price TEXT, source TEXT NOT NULL DEFAULT 'manual', external_id TEXT, position INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS idx_items_person ON items(person_slug, position, created_at)"),
+    db.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_items_external ON items(person_slug, source, external_id) WHERE external_id IS NOT NULL"),
+    db.prepare("CREATE TABLE IF NOT EXISTS amazon_sources (person_slug TEXT PRIMARY KEY, url TEXT NOT NULL, last_synced_at TEXT, last_error TEXT, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"),
+  ]);
 }
 
 async function readItem(request: Request) {

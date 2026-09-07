@@ -13,13 +13,11 @@ npx wrangler dev
 
 The full local app (including the D1-backed API) is served by Wrangler. Vite's standalone dev server is useful for styling, but does not provide the API.
 
-## First deployment
+## Deployment
 
-1. Log in: `npx wrangler login`
-2. Create D1: `npm run db:create`
-3. Copy the returned database ID into `wrangler.jsonc` in place of `REPLACE_WITH_D1_DATABASE_ID`.
-4. Apply the schema: `npm run db:migrate:remote`
-5. Deploy: `npm run deploy`
+Pushes to the connected Cloudflare Worker build automatically deploy with `npx wrangler deploy`. Wrangler provisions the D1 database from the binding in `wrangler.jsonc`, and the Worker initializes its schema on the first API request.
+
+For a manual deployment, log in with `npx wrangler login` and run `npm run deploy`.
 
 The configured Worker route is `corypahl.dev/whaley-christmas*`. The `corypahl.dev` zone must be active in the same Cloudflare account and its root DNS record must be proxied through Cloudflare.
 

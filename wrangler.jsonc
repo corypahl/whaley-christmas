@@ -18,7 +18,6 @@
     {
       "binding": "DB",
       "database_name": "whaley-christmas",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
       "migrations_dir": "migrations"
     }
   ]
