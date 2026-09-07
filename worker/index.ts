@@ -131,10 +131,7 @@ async function importAmazon(request: Request, env: Env, slug: string) {
   await env.DB.prepare("INSERT INTO amazon_sources (person_slug, url, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(person_slug) DO UPDATE SET url = excluded.url, updated_at = CURRENT_TIMESTAMP").bind(slug, listUrl.toString()).run();
 
   try {
-    const response = await fetchAmazon(listUrl);
-    if (!response.ok) throw new Error(`Amazon returned ${response.status}`);
-    const imported = await parseAmazonItems(response);
-    if (!imported.length) throw new Error("Amazon did not make any list items available to import");
+    const imported = await fetchAmazonItems(listUrl);
 
     let created = 0; let updated = 0;
     for (const item of imported.slice(0, 250)) {
@@ -154,12 +151,44 @@ async function importAmazon(request: Request, env: Env, slug: string) {
   }
 }
 
+async function fetchAmazonItems(listUrl: URL): Promise<AmazonItem[]> {
+  const candidates = [listUrl];
+  const listId = listUrl.pathname.match(/\/(?:ls|guest-view)\/([A-Z0-9]+)/i)?.[1];
+  if (listId && listUrl.pathname.includes("/wishlist/")) {
+    candidates.push(new URL(`https://www.amazon.com/gp/registry/wishlist/${listId}?ref_=wl_share`));
+  }
+
+  let lastError = "Amazon did not make any list items available to import";
+  for (const candidate of candidates) {
+    try {
+      const response = await fetchAmazon(candidate);
+      if (!response.ok) {
+        lastError = `Amazon returned HTTP ${response.status}`;
+        continue;
+      }
+      const items = await parseAmazonItems(response);
+      if (items.length) return items;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : lastError;
+    }
+  }
+  throw new Error(lastError);
+}
+
 async function fetchAmazon(initialUrl: URL): Promise<Response> {
   let url = initialUrl;
   for (let redirects = 0; redirects < 4; redirects++) {
     const host = url.hostname.toLowerCase();
     if (!(host === "amazon.com" || host.endsWith(".amazon.com"))) throw new Error("Amazon redirected to an unsupported site");
-    const response = await fetch(url.toString(), { headers: { "User-Agent": "Mozilla/5.0 (compatible; WhaleyChristmas/1.0)", "Accept-Language": "en-US,en;q=0.9" }, redirect: "manual" });
+    const response = await fetch(url.toString(), {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+      },
+      redirect: "manual",
+    });
     if (![301, 302, 303, 307, 308].includes(response.status)) return response;
     const location = response.headers.get("Location");
     if (!location) return response;

@@ -151,6 +151,7 @@ function AmazonModal({ person, source, onClose, onChanged }: { person: Person; s
         <p className="modal-copy">Paste a link to a <strong>public</strong> Amazon wish list. We’ll bring in the items we can find and remember the link for future syncing.</p>
         <label>Amazon list link<div className="input-icon"><ShoppingBag size={17} /><input autoFocus required type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.amazon.com/hz/wishlist/ls/…" /></div></label>
         <p className="hint">Amazon occasionally limits automated access. If syncing is unavailable, the saved link will still be easy to open.</p>
+        {source?.last_error && <p className="amazon-error"><strong>Last sync:</strong> {source.last_error}</p>}
         {error && <p className="form-error">{error}</p>}
         <div className="form-actions split">{source ? <button type="button" className="button danger" onClick={() => void disconnect()} disabled={saving}>Disconnect</button> : <span />}<div><button type="button" className="button ghost" onClick={onClose}>Cancel</button><button className="button primary" disabled={saving}>{saving && <LoaderCircle className="spin" size={18} />}<RefreshCw size={17} /> {source ? "Sync now" : "Connect & import"}</button></div></div>
       </form>

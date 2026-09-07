@@ -19,7 +19,7 @@ Pushes to the connected Cloudflare Worker build automatically deploy with `npx w
 
 For a manual deployment, log in with `npx wrangler login` and run `npm run deploy`.
 
-The configured Worker route is `corypahl.dev/whaley-christmas*`. The `corypahl.dev` zone must be active in the same Cloudflare account and its root DNS record must be proxied through Cloudflare.
+The Worker is configured as the custom-domain origin for `corypahl.dev`, which lets Cloudflare create the apex DNS record and certificate automatically. The app itself is served at `/whaley-christmas`; other paths return `404`.
 
 ## Amazon imports
 

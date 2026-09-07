@@ -108,6 +108,7 @@ footer svg { color: var(--red); }
 .input-icon input { padding-left: 40px; }
 .modal-copy { margin: 0; color: #665a53; font-size: 14px; line-height: 1.6; }
 .hint { margin: -8px 0 0; color: #90837b; font-size: 11px; line-height: 1.5; }
+.amazon-error { margin: -5px 0 0; padding: 10px 12px; background: #fff4dc; color: #785b24; font-size: 11px; line-height: 1.5; }
 .form-error { margin: -3px 0; padding: 10px 12px; background: #fae7e5; color: #8d312e; font-size: 12px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; }
 .form-actions.split { justify-content: space-between; align-items: center; }

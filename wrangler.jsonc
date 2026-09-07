@@ -5,8 +5,8 @@
   "compatibility_date": "2026-09-07",
   "routes": [
     {
-      "pattern": "corypahl.dev/whaley-christmas*",
-      "zone_name": "corypahl.dev"
+      "pattern": "corypahl.dev",
+      "custom_domain": true
     }
   ],
   "assets": {
