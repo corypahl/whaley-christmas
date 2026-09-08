@@ -166,8 +166,29 @@ async function fetchAmazonItems(listUrl: URL): Promise<AmazonItem[]> {
         lastError = `Amazon returned HTTP ${response.status}`;
         continue;
       }
-      const items = await parseAmazonItems(response);
-      if (items.length) return items;
+      const firstPage = await parseAmazonPage(response);
+      if (!firstPage.items.length) continue;
+
+      const items = new Map(firstPage.items.map((item) => [item.externalId, item]));
+      const seenPages = new Set<string>();
+      let nextUrl = firstPage.nextUrl;
+      let pageCount = 1;
+
+      while (nextUrl && items.size < 250 && pageCount < 25) {
+        const nextPageUrl = new URL(nextUrl, candidate);
+        const token = nextPageUrl.searchParams.get("paginationToken");
+        if (!token || seenPages.has(nextPageUrl.toString())) break;
+        seenPages.add(nextPageUrl.toString());
+
+        const nextResponse = await fetchAmazon(nextPageUrl);
+        if (!nextResponse.ok) break;
+        const nextPage = await parseAmazonPage(nextResponse);
+        for (const item of nextPage.items) items.set(item.externalId, item);
+        nextUrl = nextPage.nextUrl;
+        pageCount++;
+      }
+
+      return [...items.values()].slice(0, 250);
     } catch (error) {
       lastError = error instanceof Error ? error.message : lastError;
     }
@@ -197,14 +218,19 @@ async function fetchAmazon(initialUrl: URL): Promise<Response> {
   throw new Error("Amazon redirected too many times");
 }
 
-async function parseAmazonItems(response: Response): Promise<AmazonItem[]> {
-  const items: AmazonItem[] = []; let current: AmazonItem | null = null;
+async function parseAmazonPage(response: Response): Promise<{ items: AmazonItem[]; nextUrl: string | null }> {
+  const items: AmazonItem[] = []; let current: AmazonItem | null = null; let nextUrl: string | null = null;
+  const responseUrl = response.url;
   const transformed = new HTMLRewriter()
     .on("li[data-itemid]", { element(element) { current = { externalId: element.getAttribute("data-itemid") || crypto.randomUUID(), title: "", url: null, price: null }; element.onEndTag(() => { if (current?.title) items.push(current); current = null; }); } })
     .on('li[data-itemid] a[id^="itemName_"]', { element(element) { if (!current) return; const href = element.getAttribute("href")?.replaceAll("&amp;", "&"); if (href) current.url = validHttpUrl(new URL(href, "https://www.amazon.com").toString()); }, text(text) { if (current) current.title += text.text; } })
-    .on('li[data-itemid] span[id^="itemPrice_"]', { text(text) { if (current) current.price = `${current.price || ""}${text.text}`; } });
+    .on('li[data-itemid] span[id^="itemPrice_"]', { text(text) { if (current) current.price = `${current.price || ""}${text.text}`; } })
+    .on("input.showMoreUrl", { element(element) { const value = element.getAttribute("value")?.replaceAll("&amp;", "&"); if (value) nextUrl = new URL(value, responseUrl || "https://www.amazon.com").toString(); } });
   await transformed.transform(response).text();
-  return items.map((item) => ({ ...item, title: item.title.trim().slice(0, 160), price: item.price?.match(/\$\s?\d[\d,]*(?:\.\d{2})?/)?.[0] || null })).filter((item) => item.title);
+  return {
+    items: items.map((item) => ({ ...item, title: item.title.trim().slice(0, 160), price: item.price?.match(/\$\s?\d[\d,]*(?:\.\d{2})?/)?.[0] || null })).filter((item) => item.title),
+    nextUrl,
+  };
 }
 
 class InputError extends Error {}
