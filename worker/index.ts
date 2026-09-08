@@ -53,7 +53,7 @@ async function handleApi(request: Request, env: Env, path: string): Promise<Resp
 
   if (request.method === "GET" && parts.length === 3) {
     const [itemResult, source] = await Promise.all([
-      env.DB.prepare("SELECT id, person_slug, title, details, url, price, source, created_at, updated_at FROM items WHERE person_slug = ? ORDER BY position, created_at DESC").bind(slug).all(),
+      env.DB.prepare("SELECT id, person_slug, title, details, url, price, source, created_at, updated_at FROM items WHERE person_slug = ? ORDER BY CASE WHEN price IS NULL OR TRIM(price) = '' THEN 1 ELSE 0 END, CAST(REPLACE(REPLACE(price, '$', ''), ',', '') AS REAL) DESC, created_at DESC").bind(slug).all(),
       env.DB.prepare("SELECT url, last_synced_at, last_error FROM amazon_sources WHERE person_slug = ?").bind(slug).first(),
     ]);
     return json({ items: itemResult.results, amazonSource: source });
