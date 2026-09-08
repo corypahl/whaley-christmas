@@ -89,9 +89,11 @@ export function PersonList({ person }: { person: Person }) {
 function WishCard({ item, onEdit, onDelete }: { item: WishItem; onEdit: () => void; onDelete: () => void }) {
   return (
     <article className="wish-card">
-      <div className="wish-source">{item.source === "amazon" ? <><ShoppingBag size={14} /> Amazon</> : <><Gift size={14} /> Wish</>}</div>
-      <h3>{item.title || "Untitled wish"}</h3>
-      {item.details && <p className="wish-details">{item.details}</p>}
+      <div className="wish-copy">
+        <div className="wish-source">{item.source === "amazon" ? <><ShoppingBag size={14} /> Amazon</> : <><Gift size={14} /> Wish</>}</div>
+        <h3>{item.title || "Untitled wish"}</h3>
+        {item.details && <p className="wish-details">{item.details}</p>}
+      </div>
       <div className="wish-bottom">
         {item.price && <span className="price">{item.price}</span>}
         {item.url && <a href={item.url} target="_blank" rel="noreferrer" className="shop-link">View item <ExternalLink size={14} /></a>}
